@@ -1,0 +1,39 @@
+version: 2.1
+
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      # Creating a temporary directory and a symlink to it
+      - run: mkdir temp_dir && touch temp_dir/dummy.txt
+      - run: ln -s temp_dir symlink_dir
+      - persist_to_workspace:
+         root: .
+         paths:
+            - symlink_dir
+
+  use_symlink:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - attach_workspace:
+          at: .
+      - run: ls -ls
+      - run:
+          name: Check symlink and create directory
+          command: |
+            if [ -h "symlink_dir" ]; then
+              echo "symlink_dir is a symlink."
+            else
+              echo "symlink_dir is not a symlink."
+            fi
+workflows:
+  version: 2
+  build-and-use:
+    jobs:
+      - build
+      - use_symlink:
+          requires:
+            - build 
